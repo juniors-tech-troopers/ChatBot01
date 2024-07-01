@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat con AI</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #messages { list-style-type: none; margin: 0; padding: 20px; display: flex; flex-direction: column; }
+        .message { padding: 10px 20px; border-radius: 20px; color: white; margin-bottom: 10px; max-width: 60%; }
+        .my-message { background-color: #007bff; align-self: flex-end; }
+        .ai-message { background-color: #333333; align-self: flex-start; }
+        #form { background: #fff; padding: 10px; position: fixed; bottom: 0; width: 100%; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+        #input { border: 2px solid #007bff; padding: 10px; width: calc(100% - 84px); margin-right: 10px; border-radius: 20px; }
+        #submit { width: 60px; background-color: #007bff; border: none; padding: 10px; border-radius: 20px; color: white; }
+    </style>
+</head>
+<body>
+    <ul id="messages"></ul>
+    <form id="form" action="">
+        <input id="input" autocomplete="off"><button id="submit">Send</button>
+    </form>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+        var form = document.getElementById('form');
+        var input = document.getElementById('input');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (input.value) {
+                socket.emit('chat message', input.value);
+                addMessage(input.value, 'my-message');
+                input.value = '';
+            }
+        });
+
+        socket.on('chat message', function(msg) {
+            typeMessage(msg, 'ai-message');
+        });
+
+        function addMessage(text, className) {
+            var item = document.createElement('li');
+            item.innerHTML = escapeHtml(text).replace(/\n/g, '<br>'); // Reemplaza los saltos de línea con <br>
+            item.className = 'message ' + className;
+            document.getElementById('messages').appendChild(item);
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+
+        function typeMessage(message, className) {
+    let index = 0;
+    const interval = setInterval(() => {
+        if (index < message.length) {
+            const tempMessage = escapeHtml(message.substring(0, index + 1));
+            const messages = document.querySelectorAll('.' + className);
+            if (messages.length === 0 || index === 0) {
+                addMessage(tempMessage.replace(/\n/g, '<br>'), className);
+            } else {
+                messages[messages.length - 1].innerHTML = tempMessage.replace(/\n/g, '<br>');
+            }
+            index++;
+        } else {
+            clearInterval(interval);
+        }
+    }, 10); // Ajusta la velocidad de escritura aquí
+}
+
+    </script>
+</body>
+</html>
